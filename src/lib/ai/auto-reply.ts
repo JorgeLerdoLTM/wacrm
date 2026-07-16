@@ -9,6 +9,7 @@ import { logAiUsage } from './usage'
 import { latestUserMessage } from './query'
 import { engineSendText } from '@/lib/flows/meta-send'
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { isWithinBusinessHours } from './business-hours'
 
 interface DispatchArgs {
   /** Tenancy key — drives config, contact, and whatsapp_config lookups. */
@@ -49,6 +50,13 @@ export async function dispatchInboundToAiReply(
 
     const config = await loadAiConfig(db, accountId)
     if (!config || !config.autoReplyEnabled) return
+
+    // Consorcio Kick: the AI replies to customers ONLY during business
+    // hours (Mon–Fri 09:00–18:00 America/Mexico_City). Outside that window
+    // it stands down — the inbound stays unanswered in the inbox for a
+    // human to pick up. Client requirement (2026-07-15): after-hours
+    // inbound replies were NOT relaxed.
+    if (!isWithinBusinessHours(new Date())) return
 
     // Deterministic, user-configured responders win over the LLM — the
     // caller already excludes messages a Flow consumed. Message-level
