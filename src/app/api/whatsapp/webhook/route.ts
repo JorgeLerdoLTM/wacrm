@@ -355,6 +355,10 @@ async function handleStatusUpdate(status: {
   timestamp: string
   recipient_id: string
 }) {
+  // TEMP DIAG (2026-07-17): surface the full status incl. the `errors`
+  // array so we can read the exact delivery-failure reason. Remove after.
+  console.log('[wh-status-diag]', JSON.stringify(status))
+
   // 1) Mirror onto messages (legacy behavior) — Meta's status values
   //    already match the CHECK constraint on messages.status. No
   //    `.select()`: message_id is NOT unique (migration 009 — Meta ids
