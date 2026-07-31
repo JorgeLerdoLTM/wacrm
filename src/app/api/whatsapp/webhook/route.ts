@@ -57,6 +57,16 @@ interface WhatsAppMessage {
     button_reply?: { id: string; title: string }
     list_reply?: { id: string; title: string; description?: string }
   }
+  /**
+   * Set when the customer taps a QUICK-REPLY button on a message
+   * *template* we sent (distinct from `interactive` above, which is for
+   * interactive messages). Meta delivers `button.text` (the visible
+   * label, e.g. "Ya cuento con uno") and `button.payload`. We surface the
+   * label as plain text so the AI auto-reply reads it as the customer's
+   * answer — NOT as an interactive reply (which would be routed to Flows
+   * and skip the AI).
+   */
+  button?: { text: string; payload?: string }
   /** Present when the customer swipe-replies to one of our messages. */
   context?: { id: string }
 }
@@ -355,9 +365,6 @@ async function handleStatusUpdate(status: {
   timestamp: string
   recipient_id: string
 }) {
-  // TEMP DIAG (2026-07-17): surface the full status incl. the `errors`
-  // array so we can read the exact delivery-failure reason. Remove after.
-  console.log('[wh-status-diag]', JSON.stringify(status))
 
   // 1) Mirror onto messages (legacy behavior) — Meta's status values
   //    already match the CHECK constraint on messages.status. No
@@ -965,6 +972,19 @@ async function parseMessageContent(
         }
       }
       return { ...empty, contentText: '[Interactive reply]' }
+    }
+
+    case 'button': {
+      // Quick-reply tap on a message TEMPLATE (e.g. our GMM opener's
+      // "Ya cuento con uno" / "No cuento con GMM"). Store the visible
+      // label as text so it flows to the AI auto-reply as the customer's
+      // answer. Deliberately leave interactiveReplyId null — a template
+      // quick-reply here is the customer's response for Fernanda to read,
+      // not an interactive-message reply meant for the Flows engine.
+      return {
+        ...empty,
+        contentText: message.button?.text ?? message.button?.payload ?? null,
+      }
     }
 
     default:
