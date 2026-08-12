@@ -209,4 +209,27 @@ describe('dispatchInboundToAiReply — handoff', () => {
       assigned_agent_id: 'agent-7',
     })
   })
+
+  it('sends the farewell text before disabling when the model produced one', async () => {
+    // "Mejor marcame" case: the model says goodbye AND signals handoff.
+    // The customer must receive the goodbye, then the thread hands off.
+    h.generateReply.mockResolvedValue({
+      text: 'Claro, un asesor te contacta pronto.',
+      handoff: true,
+    })
+    await dispatchInboundToAiReply(ARGS)
+    expect(h.engineSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'Claro, un asesor te contacta pronto.' }),
+    )
+    expect(h.state.updatePayload).toMatchObject({ ai_autoreply_disabled: true })
+    // Farewell bypasses the reply-slot claim — it's part of the handoff.
+    expect(h.state.rpcCalls).toHaveLength(0)
+  })
+
+  it('still hands off when the farewell send fails', async () => {
+    h.generateReply.mockResolvedValue({ text: 'Adios.', handoff: true })
+    h.engineSendText.mockRejectedValue(new Error('meta 500'))
+    await dispatchInboundToAiReply(ARGS)
+    expect(h.state.updatePayload).toMatchObject({ ai_autoreply_disabled: true })
+  })
 })

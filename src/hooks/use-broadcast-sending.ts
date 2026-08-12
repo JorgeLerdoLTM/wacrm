@@ -103,8 +103,15 @@ export function resolveVariables(
     if (v.type === 'static') return v.value;
 
     if (v.type === 'field') {
+      // first_name/last_name are derived from `name` at send time so
+      // imports can keep the full name in one column and templates can
+      // still greet with just the first name ("Hola Sandra"). Mirror any
+      // change here in step3-personalize.tsx's preview fieldMap.
+      const nameParts = contact.name?.trim().split(/\s+/) ?? [];
       const fieldMap: Record<string, string | undefined> = {
         name: contact.name,
+        first_name: nameParts[0],
+        last_name: nameParts.slice(1).join(' ') || undefined,
         phone: contact.phone,
         email: contact.email,
         company: contact.company,

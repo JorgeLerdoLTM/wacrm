@@ -142,12 +142,31 @@ export async function dispatchInboundToAiReply(
 
     if (handoff || !text) {
       // The model can't (or shouldn't) answer — stop auto-replying on
-      // this thread and hand it to a human. We (a) pause the bot here
-      // (sticky until re-enabled), (b) route the conversation to the
-      // configured handoff agent — null leaves it in the shared queue —
-      // and (c) leave a short internal note so whoever picks it up has
-      // context. Assigning fires the `on_conversation_assigned` trigger,
-      // which notifies the agent.
+      // this thread and hand it to a human. We (a) send the model's
+      // farewell first when it produced one (a customer who says "call
+      // me instead" should hear "of course, an advisor will reach out",
+      // not silence), (b) pause the bot (sticky until re-enabled),
+      // (c) route the conversation to the configured handoff agent —
+      // null leaves it in the shared queue — and (d) leave a short
+      // internal note so whoever picks it up has context. Assigning
+      // fires the `on_conversation_assigned` trigger, which notifies
+      // the agent.
+      if (handoff && text) {
+        // Farewell send is best-effort: a failure here must not stop
+        // the handoff itself, which is the part that routes a human in.
+        try {
+          await engineSendText({
+            accountId,
+            userId: configOwnerUserId,
+            conversationId,
+            contactId,
+            text,
+            aiGenerated: true,
+          })
+        } catch (err) {
+          console.error('[ai auto-reply] handoff farewell send failed:', err)
+        }
+      }
       const summary = buildHandoffSummary({
         messages,
         replyCount: conv.ai_reply_count ?? 0,
