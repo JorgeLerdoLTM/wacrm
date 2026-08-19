@@ -22,17 +22,19 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "wacrm",
-    template: "%s — wacrm",
+    default: "Consorcio Kick",
+    template: "%s — Consorcio Kick",
   },
-  description: "Self-hostable CRM template for WhatsApp.",
+  description: "Plataforma de WhatsApp de Consorcio Kick.",
   robots: {
     index: false,
     follow: false,
   },
-  icons: {
-    icon: [{ url: "/icon" }],
-  },
+  // Icons come from the `src/app/icon.png` + `src/app/apple-icon.png`
+  // file conventions (the Consorcio Kick "CK" mark on a white plate,
+  // so it stays legible on both light and dark browser chrome).
+  // Next.js injects the <link> tags automatically — no `icons` key
+  // here, because an explicit one would override the convention.
   formatDetection: {
     email: false,
     address: false,

@@ -228,3 +228,32 @@ html[data-theme="rose"] {
     @apply font-sans;
   }
 }
+/* ============================================================
+ * BRAND ARTWORK — Consorcio Kick lockup / "CK" mark
+ *
+ * `BrandLogo` / `BrandMark` (src/components/brand/brand-logo.tsx)
+ * render two cuts of the same artwork and let CSS pick one: the
+ * original navy/black cut on light surfaces, a reversed cut
+ * (lightened blue + white wordmark) on dark ones. The brand navy
+ * #004A87 clears only ~1.9:1 against the dark sidebar, so the
+ * reversed cut is a contrast fix, not a style choice.
+ *
+ * This is hand-written CSS rather than a `dark:` utility because
+ * mode lives on `html[data-mode]`; the `dark:` variant declared at
+ * the top of this file keys off a `.dark` class that nothing sets.
+ *
+ * Light is the fallback so the artwork still resolves if the
+ * attribute is ever missing.
+ * ============================================================ */
+
+[data-brand-logo="dark"] {
+  display: none;
+}
+
+html[data-mode="dark"] [data-brand-logo="light"] {
+  display: none;
+}
+
+html[data-mode="dark"] [data-brand-logo="dark"] {
+  display: block;
+}
