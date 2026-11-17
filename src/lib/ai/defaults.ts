@@ -54,8 +54,11 @@ export function buildSystemPrompt(args: {
   mode: 'draft' | 'auto_reply'
   /** Knowledge-base excerpts retrieved for the current question. */
   knowledge?: string[]
+  /** The customer's name on file (already vetted by `contactNameForAi`);
+   *  null/undefined when unknown or not usable. */
+  contactName?: string | null
 }): string {
-  const { userPrompt, mode, knowledge } = args
+  const { userPrompt, mode, knowledge, contactName } = args
   const parts: string[] = [
     'You are a customer-messaging assistant for a business that uses a WhatsApp CRM. ' +
       'You are shown the recent WhatsApp conversation between the business (assistant) and a customer (user). ' +
@@ -74,6 +77,13 @@ export function buildSystemPrompt(args: {
 
   if (userPrompt && userPrompt.trim()) {
     parts.push(`Business context and instructions:\n${userPrompt.trim()}`)
+  }
+
+  if (contactName && contactName.trim()) {
+    parts.push(
+      `Customer's name on file (from the business's CRM): ${contactName.trim()}. ` +
+        'You may address them by their first name only, sparingly. Never use or invent any other name.',
+    )
   }
 
   if (knowledge && knowledge.length > 0) {

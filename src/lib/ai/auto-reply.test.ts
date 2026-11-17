@@ -233,3 +233,30 @@ describe('dispatchInboundToAiReply — handoff', () => {
     expect(h.state.updatePayload).toMatchObject({ ai_autoreply_disabled: true })
   })
 })
+
+describe('dispatchInboundToAiReply — customer name on file', () => {
+  it('passes a real name on file into the system prompt', async () => {
+    h.state.conv = {
+      assigned_agent_id: null,
+      ai_autoreply_disabled: false,
+      ai_reply_count: 0,
+      contacts: { name: 'Alejandra Torres Pardo' },
+    }
+    await dispatchInboundToAiReply(ARGS)
+    const call = h.generateReply.mock.calls[0]?.[0] as { systemPrompt: string }
+    expect(call.systemPrompt).toContain('Alejandra Torres Pardo')
+  })
+
+  it('leaves WhatsApp nicknames out of the system prompt', async () => {
+    h.state.conv = {
+      assigned_agent_id: null,
+      ai_autoreply_disabled: false,
+      ai_reply_count: 0,
+      contacts: { name: 'DMB' },
+    }
+    await dispatchInboundToAiReply(ARGS)
+    const call = h.generateReply.mock.calls[0]?.[0] as { systemPrompt: string }
+    expect(call.systemPrompt).not.toMatch(/name on file/i)
+    expect(call.systemPrompt).not.toContain('DMB')
+  })
+})

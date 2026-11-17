@@ -10,6 +10,7 @@ import { latestUserMessage } from './query'
 import { engineSendText } from '@/lib/flows/meta-send'
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { isWithinBusinessHours } from './business-hours'
+import { contactNameForAi } from './contact-name'
 
 interface DispatchArgs {
   /** Tenancy key — drives config, contact, and whatsapp_config lookups. */
@@ -77,7 +78,9 @@ export async function dispatchInboundToAiReply(
 
     const { data: conv, error: convErr } = await db
       .from('conversations')
-      .select('assigned_agent_id, ai_autoreply_disabled, ai_reply_count')
+      .select(
+        'assigned_agent_id, ai_autoreply_disabled, ai_reply_count, contacts(name)',
+      )
       .eq('id', conversationId)
       .maybeSingle()
     if (convErr || !conv) return
@@ -114,10 +117,20 @@ export async function dispatchInboundToAiReply(
       latestUserMessage(messages),
     )
 
+    // The name on file (set by the business's import) so the model can
+    // address the customer; nicknames and handles are filtered out.
+    const contactRow = (
+      conv as { contacts?: { name: string | null } | { name: string | null }[] | null }
+    ).contacts
+    const contactName = contactNameForAi(
+      (Array.isArray(contactRow) ? contactRow[0]?.name : contactRow?.name) ?? null,
+    )
+
     const systemPrompt = buildSystemPrompt({
       userPrompt: config.systemPrompt,
       mode: 'auto_reply',
       knowledge,
+      contactName,
     })
 
     const { text, handoff, usage } = await generateReply({
